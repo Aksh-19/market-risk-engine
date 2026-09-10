@@ -1,0 +1,35 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# --- Virtual environments ---
+.venv/
+venv/
+env/
+
+# --- Testing / coverage ---
+.pytest_cache/
+.coverage
+htmlcov/
+.ruff_cache/
+
+# --- Environment variables / secrets ---
+.env
+*.key
+
+# --- Data (raw price data can be regenerated, don't bloat the repo) ---
+data/raw/
+data/*.db
+*.sqlite3
+
+# --- Editors / OS ---
+.vscode/
+.idea/
+.DS_Store
+
+# --- Streamlit ---
+.streamlit/secrets.toml

@@ -1,0 +1,15 @@
+# Pre-commit runs these checks automatically every time you `git commit`.
+# If a check fails or reformats a file, the commit is blocked until you
+# `git add` the fixed files and commit again. This means broken/unformatted
+# code physically cannot enter the repo's history.
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.4.4
+    hooks:
+      - id: ruff
+        args: [--fix]
+
+  - repo: https://github.com/psf/black
+    rev: 24.4.2
+    hooks:
+      - id: black
