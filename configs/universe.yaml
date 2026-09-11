@@ -1,0 +1,21 @@
+# Asset universe for the market risk engine.
+# Edit this file to change what's being risk-modeled — never hardcode
+# tickers/dates inside the modeling code. This is what "reproducible
+# research" means in practice: someone can diff this file across two runs
+# to see exactly what data assumption changed.
+
+tickers:
+  - SPY   # S&P 500 ETF - broad equity market benchmark
+  - AAPL  # Single-name large cap - idiosyncratic risk contrast to SPY
+  - TLT   # 20+ Year Treasury ETF - typically low/negatively correlated to equities
+  - GLD   # Gold ETF - a classic diversifier / tail-risk hedge
+
+start_date: "2015-01-01"   # ~10 years: long enough to span multiple vol regimes
+                             # (2015-16 China slowdown, 2018 Q4, 2020 COVID crash,
+                             # 2022 rate-hike cycle) which matters a lot once you
+                             # get to backtesting VaR models in Phase 3.
+end_date: "2025-01-01"
+
+source: yfinance
+cache_dir: "data/cache"
+price_field: "Adj Close"

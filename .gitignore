@@ -21,8 +21,10 @@ htmlcov/
 .env
 *.key
 
-# --- Data (raw price data can be regenerated, don't bloat the repo) ---
+# --- Data (all regenerable via scripts/run_ingestion.py, don't bloat the repo) ---
 data/raw/
+data/cache/
+data/processed/
 data/*.db
 *.sqlite3
 
