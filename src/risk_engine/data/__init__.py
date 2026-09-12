@@ -18,9 +18,9 @@ from risk_engine.data.validators import ValidationReport, validate_price_series
 __all__ = [
     "DataConfig",
     "DataLoader",
+    "ValidationReport",
     "build_returns_matrix",
     "compute_log_returns",
     "compute_simple_returns",
-    "ValidationReport",
     "validate_price_series",
 ]

@@ -96,9 +96,9 @@ class DataLoader:
         for ticker in self.config.tickers:
             try:
                 universe[ticker] = self.fetch_prices(ticker, force_refresh=force_refresh)
-            except (
-                Exception
-            ) as exc:  # noqa: BLE001 - we want to isolate & report, not crash the whole batch
+
+            except Exception as exc:  # noqa: BLE001 -- intentional: isolate one ticker's
+                # failure so it can't take down the whole universe load; see load_universe docstring
                 failures[ticker] = str(exc)
                 logger.warning("Failed to load %s: %s", ticker, exc)
 

@@ -18,6 +18,7 @@ from datetime import date
 
 import pandas as pd
 import pytest
+from pydantic import ValidationError
 
 from risk_engine.data.config import DataConfig
 from risk_engine.data.loader import DataLoader
@@ -111,10 +112,10 @@ def test_load_universe_isolates_failures(tmp_path, monkeypatch):
 
 
 def test_empty_ticker_list_rejected_at_config_time():
-    with pytest.raises(Exception):  # pydantic.ValidationError
+    with pytest.raises(ValidationError):
         DataConfig(tickers=[], start_date=date(2024, 1, 1), end_date=date(2024, 1, 10))
 
 
 def test_end_before_start_rejected_at_config_time():
-    with pytest.raises(Exception):
+    with pytest.raises(ValidationError):
         DataConfig(tickers=["AAPL"], start_date=date(2024, 6, 1), end_date=date(2024, 1, 1))

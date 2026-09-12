@@ -82,7 +82,7 @@ def validate_price_series(
     # This is an approximation (ignores exchange-specific holidays) but is
     # good enough to catch real gaps like a multi-day feed outage.
     expected = pd.bdate_range(idx.min(), idx.max())
-    report.missing_dates = int(len(expected.difference(idx)))
+    report.missing_dates = len(expected.difference(idx))
 
     returns = prices[price_field].pct_change().dropna()
     report.zero_variance_days = int((returns == 0).sum())

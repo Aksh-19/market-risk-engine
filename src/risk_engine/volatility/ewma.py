@@ -130,7 +130,7 @@ def ewma_covariance_matrix(
         raise ValueError(f"lambda_ must be in (0, 1), got {lambda_}")
 
     R = returns.to_numpy()
-    n_obs, n_assets = R.shape
+    n_obs, _n_assets = R.shape
 
     if n_obs <= min_periods:
         raise ValueError(f"Need more than min_periods={min_periods} observations, got {n_obs}")

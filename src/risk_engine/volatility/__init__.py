@@ -12,7 +12,6 @@ from risk_engine.volatility.ewma import (
     halflife_to_lambda,
     lambda_to_halflife,
 )
-
 from risk_engine.volatility.garch import (
     GARCH11Result,
     fit_garch11,
@@ -21,13 +20,13 @@ from risk_engine.volatility.garch import (
 )
 
 __all__ = [
-    "ewma_volatility",
-    "ewma_covariance_matrix",
-    "covariance_to_correlation",
-    "halflife_to_lambda",
-    "lambda_to_halflife",
     "GARCH11Result",
+    "covariance_to_correlation",
+    "ewma_covariance_matrix",
+    "ewma_volatility",
     "fit_garch11",
     "forecast_variance",
     "garch_volatility_series",
+    "halflife_to_lambda",
+    "lambda_to_halflife",
 ]
