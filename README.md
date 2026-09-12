@@ -17,7 +17,7 @@ traffic-light), and serves the results through a real API and dashboard.
 
 - [x] Phase 0 — Project scaffold, CI, testing setup
 - [x] Phase 1 — Data ingestion & cleaning pipeline
-- [ ] Phase 2 — Volatility models (EWMA, GARCH(1,1), covariance estimation)
+- [x] Phase 2 — Volatility models (EWMA, GARCH(1,1), covariance estimation)
 - [ ] Phase 3 — VaR & Expected Shortfall (historical, parametric, Monte Carlo, Cornish-Fisher)
 - [ ] Phase 4 — Backtesting (Kupiec, Christoffersen, Basel traffic-light)
 - [ ] Phase 5 — FastAPI service layer
@@ -33,6 +33,17 @@ and log-return calculation with calendar-aligned multi-asset joins.
 `data/processed/returns_matrix.parquet` as the input to Phase 2. 17 tests
 cover the return math, alignment logic, and caching behavior. Default
 universe: SPY, AAPL, TLT, GLD, 2015–2025.
+
+**Phase 2 details:** `src/risk_engine/volatility/` — EWMA volatility and
+covariance estimation (`ewma.py`, RiskMetrics-style, with half-life<->lambda
+conversion) and GARCH(1,1) fit via maximum likelihood (`garch.py`), including
+variance forecasting and mean-reversion to a long-run unconditional
+variance — the key property EWMA structurally lacks. `scripts/fit_volatility.py`
+runs both models across the universe and writes
+`data/processed/volatility_summary.parquet` for Phase 3. 13 tests cover
+half-life conversion, EWMA/covariance consistency, and GARCH parameter
+recovery against data simulated from known ground-truth parameters.
+
 
 ## Local setup
 
