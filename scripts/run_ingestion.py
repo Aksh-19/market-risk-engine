@@ -26,12 +26,13 @@ from pathlib import Path
 import yaml
 
 from risk_engine.data import DataConfig, DataLoader, build_returns_matrix, validate_price_series
+from risk_engine.storage import RiskDatabase
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
 
 
-def main(config_path: str, output_path: str) -> None:
+def main(config_path: str, output_path: str, db_path: str) -> None:
     with open(config_path) as f:
         raw_cfg = yaml.safe_load(f)
     config = DataConfig(**raw_cfg)
@@ -70,10 +71,18 @@ def main(config_path: str, output_path: str) -> None:
     returns_matrix.to_parquet(out_path)
     logger.info("Wrote %s", out_path)
 
+    # Also persist to the queryable store -- parquet stays the fast,
+    # disposable cache; SQLite becomes the structured record that Phase 2's
+    # volatility fits and Phase 3's VaR outputs will build on top of.
+    with RiskDatabase(db_path) as db:
+        db.write_returns(returns_matrix)
+    logger.info("Wrote returns to %s", db_path)
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Phase 1: data ingestion pipeline")
     parser.add_argument("--config", default="configs/universe.yaml")
     parser.add_argument("--output", default="data/processed/returns_matrix.parquet")
+    parser.add_argument("--db", default="data/processed/risk_engine.db")
     args = parser.parse_args()
-    main(args.config, args.output)
+    main(args.config, args.output, args.db)
