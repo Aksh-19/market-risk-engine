@@ -36,7 +36,7 @@ dependencies = [
 dev = [
     "pytest>=8.0",        # test runner
     "pytest-cov>=5.0",    # test coverage reporting
-    "ruff>=0.4",          # fast linter (catches bugs, unused imports, style issues)
+    "ruff==0.4.4",          # fast linter (catches bugs, unused imports, style issues) pinned to match pre commit
     "black==24.4.2",      # pinned to match .pre-commit-config.yaml's rev, so CI/local/pre-commit all agree
     "pre-commit>=3.7",    # runs black/ruff automatically before every commit
 ]
