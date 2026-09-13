@@ -41,6 +41,7 @@ from __future__ import annotations
 
 import sqlite3
 from pathlib import Path
+from typing import Self
 
 import numpy as np
 import pandas as pd
@@ -58,7 +59,7 @@ class RiskDatabase:
     def close(self) -> None:
         self._conn.close()
 
-    def __enter__(self) -> "RiskDatabase":
+    def __enter__(self) -> Self:
         return self
 
     def __exit__(self, *exc) -> None:

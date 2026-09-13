@@ -16,6 +16,7 @@ from pathlib import Path
 
 import pandas as pd
 
+from risk_engine.storage import RiskDatabase
 from risk_engine.volatility import (
     covariance_to_correlation,
     ewma_covariance_matrix,
@@ -23,7 +24,6 @@ from risk_engine.volatility import (
     fit_garch11,
     garch_volatility_series,
 )
-from risk_engine.storage import RiskDatabase
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
