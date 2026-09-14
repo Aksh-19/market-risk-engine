@@ -34,6 +34,7 @@ dependencies = [
 # Never shipped to production — these are tools that help YOU, not the app.
 [project.optional-dependencies]
 dev = [
+    "arch>=6.0",
     "pytest>=8.0",        # test runner
     "pytest-cov>=5.0",    # test coverage reporting
     "ruff==0.4.4",          # fast linter (catches bugs, unused imports, style issues) pinned to match pre commit
