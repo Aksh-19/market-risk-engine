@@ -39,6 +39,7 @@ dev = [
     "ruff==0.4.4",          # fast linter (catches bugs, unused imports, style issues) pinned to match pre commit
     "black==24.4.2",      # pinned to match .pre-commit-config.yaml's rev, so CI/local/pre-commit all agree
     "pre-commit>=3.7",    # runs black/ruff automatically before every commit
+    "scikit-learn>=1.3",
 ]
 
 [build-system]

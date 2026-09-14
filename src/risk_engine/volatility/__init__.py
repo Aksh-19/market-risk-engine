@@ -5,6 +5,7 @@ Downstream modules (VaR, backtesting) should import from
 risk_engine.volatility, not reach into submodules directly.
 """
 
+from risk_engine.volatility.covariance import ledoit_wolf_shrinkage, sample_covariance
 from risk_engine.volatility.ewma import (
     covariance_to_correlation,
     ewma_covariance_matrix,
@@ -18,6 +19,7 @@ from risk_engine.volatility.garch import (
     forecast_variance,
     garch_volatility_series,
 )
+from risk_engine.volatility.rolling import rolling_volatility
 
 __all__ = [
     "GARCH11Result",
@@ -28,5 +30,8 @@ __all__ = [
     "forecast_variance",
     "garch_volatility_series",
     "halflife_to_lambda",
+    "ledoit_wolf_shrinkage",
     "lambda_to_halflife",
+    "rolling_volatility",
+    "sample_covariance",
 ]
