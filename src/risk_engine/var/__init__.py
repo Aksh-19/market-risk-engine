@@ -8,6 +8,12 @@ from risk_engine.var.portfolio import (
 )
 from risk_engine.var.covariance_selector import get_covariance_matrix
 from risk_engine.var.historical import historical_var, historical_expected_shortfall
+from risk_engine.var.parametric import parametric_var, parametric_expected_shortfall
+from risk_engine.var.monte_carlo import monte_carlo_var, monte_carlo_expected_shortfall
+from risk_engine.var.filtered_historical import (
+    filtered_historical_var,
+    filtered_historical_expected_shortfall,
+)
 
 __all__ = [
     "validate_weights",
@@ -17,4 +23,10 @@ __all__ = [
     "get_covariance_matrix",
     "historical_var",
     "historical_expected_shortfall",
+    "parametric_var",
+    "parametric_expected_shortfall",
+    "monte_carlo_var",
+    "monte_carlo_expected_shortfall",
+    "filtered_historical_var",
+    "filtered_historical_expected_shortfall",
 ]

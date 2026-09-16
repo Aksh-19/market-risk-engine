@@ -105,6 +105,17 @@ class RiskDatabase:
                 PRIMARY KEY (ticker, fit_date)
             );
 
+            CREATE TABLE IF NOT EXISTS var_results (
+                run_date TEXT NOT NULL,
+                portfolio TEXT NOT NULL,
+                method TEXT NOT NULL,
+                cov_source TEXT NOT NULL,
+                confidence_level REAL NOT NULL,
+                var_value REAL NOT NULL,
+                es_value REAL NOT NULL,
+                PRIMARY KEY (run_date, portfolio, method, cov_source, confidence_level)
+            );
+
             CREATE INDEX IF NOT EXISTS idx_returns_ticker ON returns(ticker);
             CREATE INDEX IF NOT EXISTS idx_volatility_ticker_model ON volatility(ticker, model);
             """
@@ -257,3 +268,68 @@ class RiskDatabase:
         parameters have drifted across re-fits over time."""
         query = "SELECT * FROM garch_params WHERE ticker = ? ORDER BY fit_date"
         return pd.read_sql(query, self._conn, params=[ticker], parse_dates=["fit_date"])
+
+    # ------------------------------------------------------------------
+    # VaR / ES results (Phase 3)
+    # ------------------------------------------------------------------
+
+    def write_var_results(
+        self,
+        results: pd.DataFrame,
+        run_date: pd.Timestamp,
+        portfolio: str = "equal_weight_4asset",
+    ) -> None:
+        """
+        Persist one full run_var.py comparison table.
+
+        Expects a long-format DataFrame with columns:
+        method, cov_source, confidence_level (float, e.g. 0.01), var, es.
+        This is exactly the shape of the `summary_rows` list built in
+        scripts/run_var.py, before the display-string formatting is applied
+        -- store raw floats, format only at print/read time.
+
+        Upsert-by-replace: deletes any existing rows for this run_date +
+        portfolio first, matching the same "re-running overwrites, never
+        accumulates duplicates" convention used by write_volatility() and
+        write_covariance_snapshot() in Phase 2.
+        """
+        run_date_str = str(pd.Timestamp(run_date).date())
+
+        df = results.copy()
+        df["run_date"] = run_date_str
+        df["portfolio"] = portfolio
+        df = df.rename(columns={"var": "var_value", "es": "es_value"})
+
+        self._conn.execute(
+            "DELETE FROM var_results WHERE run_date = ? AND portfolio = ?",
+            (run_date_str, portfolio),
+        )
+        df[
+            [
+                "run_date",
+                "portfolio",
+                "method",
+                "cov_source",
+                "confidence_level",
+                "var_value",
+                "es_value",
+            ]
+        ].to_sql("var_results", self._conn, if_exists="append", index=False)
+        self._conn.commit()
+
+    def read_var_results(
+        self, portfolio: str = "equal_weight_4asset", run_date: pd.Timestamp | None = None
+    ) -> pd.DataFrame:
+        """
+        Read back stored VaR/ES results. Without run_date, returns every
+        historical run for this portfolio -- useful later for tracking how
+        VaR estimates have drifted as new data arrives (the same "track
+        re-fits over time" idea read_garch_params() already supports).
+        """
+        query = "SELECT * FROM var_results WHERE portfolio = ?"
+        params: list = [portfolio]
+        if run_date is not None:
+            query += " AND run_date = ?"
+            params.append(str(pd.Timestamp(run_date).date()))
+        query += " ORDER BY run_date, method, cov_source, confidence_level"
+        return pd.read_sql(query, self._conn, params=params)
