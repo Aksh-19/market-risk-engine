@@ -98,7 +98,7 @@ def main() -> None:
     # Persist RAW floats before any display formatting -- write_var_results
     # expects numeric var/es/confidence_level columns, not formatted strings.
     persist_df = summary_df.rename(columns={"alpha": "confidence_level", "VaR": "var", "ES": "es"})
-    with RiskDatabase("data/risk_engine.db") as db:
+    with RiskDatabase("data/processed/risk_engine.db") as db:
         db.write_var_results(persist_df, run_date=pd.Timestamp.today())
 
     display_df = summary_df.copy()
@@ -110,7 +110,7 @@ def main() -> None:
     print("SUMMARY COMPARISON — all methods, all confidence levels")
     print("=" * 60)
     print(display_df.to_string(index=False))
-    print("\nResults persisted to data/risk_engine.db (var_results table)")
+    print("\nResults persisted to data/processed/risk_engine.db (var_results table)")
 
 
 if __name__ == "__main__":
