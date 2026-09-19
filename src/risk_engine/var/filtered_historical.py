@@ -39,19 +39,43 @@ from risk_engine.var.portfolio import validate_weights
 
 def _standardized_residuals_and_forecast(
     returns: pd.DataFrame,
+    cached_params: dict[str, tuple[float, float, float]] | None = None,
 ) -> tuple[pd.DataFrame, np.ndarray]:
     """
-    Fit GARCH(1,1) per asset. Returns:
+    Fit (or reuse) GARCH(1,1) per asset. Returns:
       Z          -- (T, n_assets) standardized residuals, z_t = r_t / sigma_t
-      sigma_next -- (n_assets,) one-step-ahead GARCH volatility forecast,
-                    i.e. "tomorrow's" conditional volatility per asset.
+      sigma_next -- (n_assets,) one-step-ahead GARCH volatility forecast.
+
+    cached_params: optional {ticker: (omega, alpha, beta)}. When provided,
+    skips MLE re-fitting entirely and just re-runs the (cheap) forward
+    recursion with these fixed parameters on the current window -- this is
+    the hook rolling.py uses for weekly-refit / daily-reuse backtesting.
     """
+    from risk_engine.volatility.garch import (
+        GARCH11Result,
+        conditional_variance_from_params,
+    )
+
     z_columns = {}
     sigma_next = []
 
     for col in returns.columns:
-        fitted = fit_garch11(returns[col])
-        sigma_t = np.sqrt(fitted.conditional_variance)
+        if cached_params is not None:
+            omega, alpha, beta = cached_params[col]
+            sigma2 = conditional_variance_from_params(returns[col], omega, alpha, beta)
+            fitted = GARCH11Result(
+                omega=omega,
+                alpha=alpha,
+                beta=beta,
+                log_likelihood=float("nan"),
+                converged=True,
+                conditional_variance=sigma2,
+            )
+        else:
+            fitted = fit_garch11(returns[col])
+            sigma2 = fitted.conditional_variance
+
+        sigma_t = np.sqrt(sigma2)
         z_columns[col] = returns[col].to_numpy() / sigma_t
 
         var_forecast_1step = forecast_variance(fitted, horizon=1)[0]
@@ -61,18 +85,17 @@ def _standardized_residuals_and_forecast(
     return Z, np.array(sigma_next)
 
 
-def _simulate_fhs_portfolio_returns(returns: pd.DataFrame, weights: np.ndarray) -> pd.Series:
-    """
-    Build the FHS simulated portfolio return series: every historical day's
-    standardized shock vector, rescaled by tomorrow's GARCH volatility
-    forecast, weighted into a single portfolio number per historical date.
-    """
+def _simulate_fhs_portfolio_returns(
+    returns: pd.DataFrame,
+    weights: np.ndarray,
+    cached_params: dict[str, tuple[float, float, float]] | None = None,
+) -> pd.Series:
     n_assets = returns.shape[1]
     w = validate_weights(weights, n_assets)
 
-    Z, sigma_next = _standardized_residuals_and_forecast(returns)
+    Z, sigma_next = _standardized_residuals_and_forecast(returns, cached_params)
 
-    r_sim = Z.to_numpy() * sigma_next  # broadcast: each column rescaled by its own sigma_next
+    r_sim = Z.to_numpy() * sigma_next
     r_p_sim = r_sim @ w
 
     return pd.Series(r_p_sim, index=returns.index, name="fhs_simulated_portfolio_return")
@@ -82,9 +105,10 @@ def filtered_historical_var(
     returns: pd.DataFrame,
     weights: np.ndarray,
     confidence_levels: tuple[float, ...] = (0.01, 0.05),
+    cached_params: dict[str, tuple[float, float, float]] | None = None,
 ) -> dict[float, float]:
     """FHS VaR: empirical quantile of the volatility-rescaled simulated series."""
-    r_p_sim = _simulate_fhs_portfolio_returns(returns, weights)
+    r_p_sim = _simulate_fhs_portfolio_returns(returns, weights, cached_params)
 
     result: dict[float, float] = {}
     for alpha in confidence_levels:
@@ -97,9 +121,10 @@ def filtered_historical_expected_shortfall(
     returns: pd.DataFrame,
     weights: np.ndarray,
     confidence_levels: tuple[float, ...] = (0.01, 0.05),
+    cached_params: dict[str, tuple[float, float, float]] | None = None,
 ) -> dict[float, float]:
     """FHS ES: tail-average of the volatility-rescaled simulated series."""
-    r_p_sim = _simulate_fhs_portfolio_returns(returns, weights)
+    r_p_sim = _simulate_fhs_portfolio_returns(returns, weights, cached_params)
 
     result: dict[float, float] = {}
     for alpha in confidence_levels:

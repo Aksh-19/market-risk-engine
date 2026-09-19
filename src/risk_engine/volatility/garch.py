@@ -175,6 +175,21 @@ def fit_garch11(returns: pd.Series, scale: float = 100.0) -> GARCH11Result:
     )
 
 
+def conditional_variance_from_params(
+    returns: pd.Series, omega: float, alpha: float, beta: float
+) -> np.ndarray:
+    """
+    Public wrapper around the internal GARCH(1,1) recursion, exposed so
+    callers can reuse ALREADY-FITTED parameters without re-running MLE
+    optimization. This is what makes a "refit weekly, reuse daily" backtest
+    schedule computationally tractable -- see rolling.py's
+    filtered-historical backtest, which refits every 5 days but still needs
+    a fresh conditional variance recursion every single day as the rolling
+    window shifts.
+    """
+    return _conditional_variance(returns.to_numpy(), omega, alpha, beta)
+
+
 def garch_volatility_series(returns: pd.Series, fitted: GARCH11Result) -> pd.Series:
     """Wrap the fitted conditional variance back into a labeled, sqrt'd
     volatility series aligned to the original return series' index."""
