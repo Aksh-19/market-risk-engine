@@ -116,6 +116,25 @@ class RiskDatabase:
                 PRIMARY KEY (run_date, portfolio, method, cov_source, confidence_level)
             );
 
+            CREATE TABLE IF NOT EXISTS backtest_results (
+                run_date TEXT NOT NULL,
+                method TEXT NOT NULL,
+                confidence_level TEXT NOT NULL,
+                n_obs INTEGER,
+                n_breaches INTEGER,
+                breach_rate REAL,
+                kupiec_lr REAL,
+                kupiec_p_value REAL,
+                kupiec_reject INTEGER,
+                christoffersen_lr_ind REAL,
+                christoffersen_p_ind REAL,
+                christoffersen_reject_ind INTEGER,
+                combined_lr REAL,
+                combined_p_value REAL,
+                combined_reject INTEGER,
+                PRIMARY KEY (run_date, method, confidence_level)
+            );
+
             CREATE INDEX IF NOT EXISTS idx_returns_ticker ON returns(ticker);
             CREATE INDEX IF NOT EXISTS idx_volatility_ticker_model ON volatility(ticker, model);
             """
@@ -332,4 +351,70 @@ class RiskDatabase:
             query += " AND run_date = ?"
             params.append(str(pd.Timestamp(run_date).date()))
         query += " ORDER BY run_date, method, cov_source, confidence_level"
+        return pd.read_sql(query, self._conn, params=params)
+
+    # ------------------------------------------------------------------
+    # Backtest validation results (Phase 4)
+    # ------------------------------------------------------------------
+
+    def write_backtest_results(self, results: pd.DataFrame, run_date: pd.Timestamp) -> None:
+        """
+        Persist one full run_backtest_validation.py run: Kupiec,
+        Christoffersen, and Basel summary rows for every method/confidence
+        level combination.
+
+        Boolean reject flags are stored as 0/1 (SQLite has no native
+        boolean type) -- cast explicitly here rather than relying on
+        pandas/sqlite3's implicit conversion, which can be inconsistent
+        across pandas versions for columns containing None alongside bools.
+
+        Upsert-by-replace: deletes any existing rows for this run_date
+        first, matching the exact convention write_var_results() already
+        established -- re-running overwrites that day's run, never
+        duplicates it.
+        """
+        run_date_str = str(pd.Timestamp(run_date).date())
+
+        df = results.copy()
+        df["run_date"] = run_date_str
+        df["confidence_level"] = df["confidence_level"].astype(str)
+
+        bool_cols = ["kupiec_reject", "christoffersen_reject_ind", "combined_reject"]
+        for col in bool_cols:
+            df[col] = df[col].map(lambda v: None if pd.isna(v) else int(bool(v)))
+
+        self._conn.execute("DELETE FROM backtest_results WHERE run_date = ?", (run_date_str,))
+
+        columns = [
+            "run_date",
+            "method",
+            "confidence_level",
+            "n_obs",
+            "n_breaches",
+            "breach_rate",
+            "kupiec_lr",
+            "kupiec_p_value",
+            "kupiec_reject",
+            "christoffersen_lr_ind",
+            "christoffersen_p_ind",
+            "christoffersen_reject_ind",
+            "combined_lr",
+            "combined_p_value",
+            "combined_reject",
+        ]
+        df[columns].to_sql("backtest_results", self._conn, if_exists="append", index=False)
+        self._conn.commit()
+
+    def read_backtest_results(self, run_date: pd.Timestamp | None = None) -> pd.DataFrame:
+        """
+        Read back stored backtest validation results. Without run_date,
+        returns every historical run -- same "track drift over time" idea
+        as read_var_results() and read_garch_params().
+        """
+        query = "SELECT * FROM backtest_results WHERE 1=1"
+        params: list = []
+        if run_date is not None:
+            query += " AND run_date = ?"
+            params.append(str(pd.Timestamp(run_date).date()))
+        query += " ORDER BY run_date, method, confidence_level"
         return pd.read_sql(query, self._conn, params=params)

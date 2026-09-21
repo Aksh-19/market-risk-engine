@@ -22,7 +22,7 @@ traffic-light), and serves the results through a real API and dashboard.
 - [x] Phase 2 — Volatility models (EWMA, GARCH(1,1), covariance estimation)
 - [x] Phase 3 — VaR & Expected Shortfall (Historical Simulation, Parametric,
       Monte Carlo, Filtered Historical Simulation)
-- [ ] Phase 4 — Backtesting (Kupiec, Christoffersen, Basel traffic-light)
+- [x] Phase 4 — Backtesting (Kupiec, Christoffersen, Basel traffic-light)
 - [ ] Phase 5 — FastAPI service layer
 - [ ] Phase 6 — Streamlit dashboard
 - [ ] Phase 7 — Docker + deployment + CI polish
@@ -109,6 +109,51 @@ separate code path.
   re-running without duplicating rows, and accumulates across run dates so
   VaR drift over time is queryable later).
 
+**Phase 4 details:** `src/risk_engine/backtest/` — a genuinely out-of-sample
+rolling backtest engine (`rolling.py`, 500-day window; each day's VaR is
+computed using only strictly prior data, then checked against that day's
+real outcome) across all 4 Phase 3 methods, followed by three independent
+statistical validation lenses:
+
+- `kupiec.py` — Proportion-of-Failures likelihood-ratio test: does the
+  realized breach rate match the claimed confidence level? Validated
+  against a hand-derived textbook reference value.
+- `christoffersen.py` — independence test: do breaches cluster in time
+  (a model going blind during one crisis) rather than scattering randomly?
+  A distinct failure mode Kupiec cannot detect on its own. Includes the
+  combined conditional-coverage test (chi-squared, 2 df) used by
+  regulators.
+- `basel.py` — the literal Basel Committee Green/Yellow/Red traffic-light
+  classification over rolling 250-day windows, boundary-tested at the
+  exact regulatory thresholds (4/5 and 9/10 breaches).
+
+`scripts/run_backtest.py` runs the (slow) rolling simulation and caches
+results per method under `data/processed/backtests/`. `scripts/run_backtest_validation.py`
+runs all three statistical tests against those cached results and persists
+them to `data/processed/risk_engine.db` (`backtest_results` table).
+
+**Real out-of-sample findings (2015 trading days, 2017–2024, equal-weight
+portfolio):**
+
+| Method | 1% breach rate | Kupiec verdict | Basel: time in Red |
+|---|---|---|---|
+| Historical Simulation | 1.19% | calibrated (p=0.40) | 1.1% |
+| Filtered Historical Simulation | 1.39% | calibrated (p=0.097) | **0.0%** |
+| Parametric (EWMA) | 1.84% | **miscalibrated** (p=0.0007) | 6.6% |
+| Monte Carlo (EWMA) | 2.23% | **miscalibrated** (p<0.0001) | **12.1%** |
+
+Kupiec alone would call Historical Simulation the clear winner. Christoffersen's
+independence test revealed a subtler issue: Historical Sim's breaches are
+*clustered* at the 5% level (p=0.0013) — it gets the right count while
+still going blind during specific volatile stretches, a failure mode Kupiec
+structurally cannot see. No method passes both tests cleanly at both
+confidence levels — which is realistic, and exactly why Basel's graded
+traffic-light system exists rather than a binary pass/fail. Under Basel's
+rolling-window framework, Filtered Historical Simulation never once
+entered the Red zone across the full 8-year backtest, while Monte Carlo
+spent 12.1% of all 250-day windows there — territory that would trigger
+mandatory regulatory capital increases in the real world.
+
 **Real results (equal-weight SPY/AAPL/TLT/GLD, 2015–2024, 2,515 trading days):**
 
 | Method | 1% VaR | 1% ES | ES/VaR ratio |
@@ -126,7 +171,7 @@ Simulation lands between the two (1.26), inheriting Historical Sim's real
 tail shape while conditioning its threshold on current GARCH volatility,
 exactly as the method's theory predicts.
 
-129 tests total across all modules, all passing in CI.
+167 tests total across all modules, all passing in CI.
 
 ## Local setup
 
@@ -147,6 +192,8 @@ pytest                           # should pass with the smoke test
 python3 scripts/run_ingestion.py   # Phase 1: fetch, validate, build returns matrix
 python3 scripts/fit_volatility.py  # Phase 2: fit EWMA + GARCH, persist to SQLite
 python3 scripts/run_var.py         # Phase 3: compute VaR/ES across 4 methods, persist results
+python3 scripts/run_backtest.py             # Phase 4: rolling out-of-sample backtest (slow)
+python3 scripts/run_backtest_validation.py  # Phase 4: Kupiec/Christoffersen/Basel, persist results
 ```
 
 ## Project structure
@@ -158,6 +205,7 @@ src/risk_engine/     the actual package — importable code lives here
   var/                Phase 3: portfolio utils, covariance selector, 4 VaR/ES methods
   diagnostics/        ADF stationarity testing
   storage/            SQLite persistence layer (RiskDatabase)
+  backtest/           Phase 4: rolling backtest engine, Kupiec, Christoffersen, Basel zones
 tests/                pytest test suite, mirrors the src/ structure (129 tests)
 configs/              YAML configs (asset universe, date ranges) — no hardcoded params in code
 scripts/              thin orchestration entry points (run_ingestion.py, fit_volatility.py, run_var.py)
