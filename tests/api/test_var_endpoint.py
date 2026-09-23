@@ -6,8 +6,9 @@ from risk_engine.var import historical_var
 
 
 @pytest.fixture
-def client():
-    with TestClient(create_app()) as c:  # `with` triggers lifespan — required
+def client(tmp_returns_parquet, monkeypatch):
+    monkeypatch.setenv("RISK_RETURNS_PATH", str(tmp_returns_parquet))
+    with TestClient(create_app()) as c:
         yield c
 
 
