@@ -45,3 +45,18 @@ class VaRResponse(BaseModel):
     horizon_days: int = 1
     results: list[VaRResult]
     provenance: Provenance
+
+
+class VaRHistoryEntry(BaseModel):
+    run_date: date
+    portfolio: str
+    method: Method
+    cov_source: CovSource | None
+    confidence_level: float  # returned in 0.99-style, flipped back for display
+    var_value: float
+    es_value: float
+
+
+class VaRHistoryResponse(BaseModel):
+    count: int
+    results: list[VaRHistoryEntry]

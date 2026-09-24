@@ -6,8 +6,9 @@ from risk_engine.var import historical_var
 
 
 @pytest.fixture
-def client(tmp_returns_parquet, monkeypatch):
+def client(tmp_returns_parquet, tmp_risk_db, monkeypatch):
     monkeypatch.setenv("RISK_RETURNS_PATH", str(tmp_returns_parquet))
+    monkeypatch.setenv("RISK_DB_PATH", str(tmp_risk_db))
     with TestClient(create_app()) as c:
         yield c
 
@@ -38,3 +39,25 @@ def test_unknown_ticker(client):
     r = client.post("/v1/var", json={"weights": {"NOPE": 1.0}, "confidence_level": 0.99})
     assert r.status_code == 422
     assert r.json()["tickers"] == ["NOPE"]
+
+
+def test_history_filters_and_maps_correctly(client):
+    r = client.get(
+        "/v1/var/history",
+        params={
+            "portfolio": "equal_weight_4asset",
+            "method": "historical",
+            "confidence_level": 0.99,
+        },
+    )
+    assert r.status_code == 200
+    body = r.json()
+    assert body["count"] == 1
+    assert body["results"][0]["cov_source"] is None
+    assert body["results"][0]["var_value"] == pytest.approx(0.0199)
+
+
+def test_history_empty_when_no_match(client):
+    r = client.get("/v1/var/history", params={"method": "monte_carlo", "confidence_level": 0.99})
+    assert r.status_code == 200
+    assert r.json() == {"count": 0, "results": []}
