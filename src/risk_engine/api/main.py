@@ -4,7 +4,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from risk_engine import __version__
 from risk_engine.api.config import Settings
-from risk_engine.api.errors import UnknownTickerError
+from risk_engine.api.errors import UnknownTickerError, NoBacktestError
 from risk_engine.api.routers import health, var
 
 
@@ -28,6 +28,13 @@ def create_app() -> FastAPI:
         return JSONResponse(
             status_code=422,
             content={"error": "unknown_ticker", "detail": str(exc), "tickers": exc.tickers},
+        )
+
+    @app.exception_handler(NoBacktestError)
+    async def _no_backtest(_: Request, exc: NoBacktestError):
+        return JSONResponse(
+            status_code=404,
+            content={"error": "no_backtest", "detail": str(exc), "method": exc.method},
         )
 
     return app

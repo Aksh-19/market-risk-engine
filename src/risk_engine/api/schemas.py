@@ -60,3 +60,33 @@ class VaRHistoryEntry(BaseModel):
 class VaRHistoryResponse(BaseModel):
     count: int
     results: list[VaRHistoryEntry]
+
+
+class BacktestQuantileResult(BaseModel):
+    confidence_level: float
+    n_obs: int
+    n_breaches: int
+    breach_rate: float
+    kupiec_lr: float
+    kupiec_p_value: float
+    kupiec_reject: bool
+    christoffersen_lr_ind: float
+    christoffersen_p_ind: float
+    christoffersen_reject_ind: bool
+    combined_lr: float
+    combined_p_value: float
+    combined_reject: bool
+
+
+class BaselSummary(BaseModel):
+    n_windows: int
+    current_breaches: int
+    pct_time_green: float
+    current_zone_is_red: bool
+
+
+class BacktestResponse(BaseModel):
+    method: Method
+    run_date: date
+    quantile_results: list[BacktestQuantileResult]
+    basel_summary: BaselSummary | None

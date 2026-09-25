@@ -1,16 +1,6 @@
 import numpy as np
 import pytest
-from fastapi.testclient import TestClient
-from risk_engine.api.main import create_app
 from risk_engine.var import historical_var
-
-
-@pytest.fixture
-def client(tmp_returns_parquet, tmp_risk_db, monkeypatch):
-    monkeypatch.setenv("RISK_RETURNS_PATH", str(tmp_returns_parquet))
-    monkeypatch.setenv("RISK_DB_PATH", str(tmp_risk_db))
-    with TestClient(create_app()) as c:
-        yield c
 
 
 def test_api_matches_engine(client):

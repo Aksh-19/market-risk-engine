@@ -2,8 +2,9 @@ from fastapi import APIRouter, Depends, Request
 import pandas as pd
 from risk_engine.api.schemas import VaRRequest, VaRResponse, Method, CovSource
 from risk_engine.api.services.var_service import compute_var
-from risk_engine.api.schemas import VaRHistoryResponse
+from risk_engine.api.schemas import VaRHistoryResponse, BacktestResponse
 from risk_engine.api.services.history_service import get_var_history
+from risk_engine.api.services.backtest_service import get_backtest_results
 from risk_engine.storage.db import RiskDatabase
 from collections.abc import Iterator
 
@@ -38,3 +39,8 @@ def var_history(
     db: RiskDatabase = Depends(get_db),
 ):
     return get_var_history(db, portfolio, method, cov_source, confidence_level, start, end)
+
+
+@router.get("/backtests/{method}", response_model=BacktestResponse)
+def backtests(method: Method, db: RiskDatabase = Depends(get_db)):
+    return get_backtest_results(db, method)
