@@ -23,9 +23,14 @@ traffic-light), and serves the results through a real API and dashboard.
 - [x] Phase 3 — VaR & Expected Shortfall (Historical Simulation, Parametric,
       Monte Carlo, Filtered Historical Simulation)
 - [x] Phase 4 — Backtesting (Kupiec, Christoffersen, Basel traffic-light)
-- [ ] Phase 5 — FastAPI service layer
+- [x] Phase 5 — FastAPI service layer
 - [ ] Phase 6 — Streamlit dashboard
 - [ ] Phase 7 — Docker + deployment + CI polish
+
+> **Scope note:** given project timeline constraints, only the Phase 6
+> Streamlit dashboard will be deployed live. Phase 7 (Docker + full API
+> deployment) is deferred rather than dropped, the API itself is
+> complete, tested, and runnable locally regardless.
 
 **Phase 1 details:** `src/risk_engine/data/` — Pydantic-validated config
 (`DataConfig`), a caching data loader (`DataLoader`) pulling from Yahoo
@@ -171,7 +176,45 @@ Simulation lands between the two (1.26), inheriting Historical Sim's real
 tail shape while conditioning its threshold on current GARCH volatility,
 exactly as the method's theory predicts.
 
-167 tests total across all modules, all passing in CI.
+**Phase 5 details:** `src/risk_engine/api/` — a FastAPI service layer over
+the full engine, built as six independent stages (routers → services →
+engine; the engine package never imports FastAPI, so every method is
+tested identically whether called directly or through HTTP).
+
+- `POST /v1/var` — compute VaR/ES across any subset of the 4 methods for
+  an arbitrary weight vector, with a positive-decimal-loss-fraction
+  convention and full provenance (data as-of date, engine version, seed,
+  compute time) on every response — the reproducibility guarantee real
+  risk-governance frameworks require.
+- `GET /v1/var/history` — queries logged runs from `risk_engine.db`,
+  bridging `run_var.py`'s human-readable output labels to the API's
+  canonical method/covariance enums via an explicit mapping layer.
+- `GET /v1/backtests/{method}` — serves Kupiec/Christoffersen results per
+  confidence level plus a separate Basel summary (current zone, % time in
+  Green across all rolling windows).
+- `POST /v1/var/attribution` — component VaR via Euler decomposition:
+  splits portfolio VaR into an exact per-asset breakdown
+  (`component_i = wᵢ · (Σw)ᵢ/σₚ · z`, summing precisely to the whole),
+  answering "which asset is actually driving portfolio risk" rather than
+  just "what % of capital is it." Parametric-only, since the decomposition
+  needs an explicit covariance matrix. On the real equal-weight portfolio,
+  reveals AAPL drives 31% of portfolio risk against a 25% capital weight,
+  while TLT contributes only 17% — real, quantified diversification value
+  from the bond position.
+- API-key auth on every `/v1/*` route (`/health`/`/ready` stay open for
+  container healthchecks), request-ID middleware with structured JSON
+  logging, CORS for the Phase 6 dashboard, and an OpenAPI schema snapshot
+  test guarding the public contract against unintended drift.
+
+Two real correctness bugs were caught and fixed during this phase, not
+just features shipped: a confidence-level convention mismatch (API's
+"99% confidence" vs. the engine's "1% tail probability" — silently wrong
+in the untested direction), and a SQLite thread-affinity crash from
+sharing one connection across FastAPI's threadpool (fixed by opening a
+per-request connection via a generator dependency). Both are now guarded
+permanently by contract tests, not just fixed once by hand.
+
++179 tests total across all modules (167 engine + 12 API/contract), all passing in CI.
 
 ## Local setup
 
@@ -194,6 +237,7 @@ python3 scripts/fit_volatility.py  # Phase 2: fit EWMA + GARCH, persist to SQLit
 python3 scripts/run_var.py         # Phase 3: compute VaR/ES across 4 methods, persist results
 python3 scripts/run_backtest.py             # Phase 4: rolling out-of-sample backtest (slow)
 python3 scripts/run_backtest_validation.py  # Phase 4: Kupiec/Christoffersen/Basel, persist results
+python3 -m uvicorn risk_engine.api.main:app --reload   # Phase 5: run the API locally, docs at /docs
 ```
 
 ## Project structure
@@ -206,7 +250,8 @@ src/risk_engine/     the actual package — importable code lives here
   diagnostics/        ADF stationarity testing
   storage/            SQLite persistence layer (RiskDatabase)
   backtest/           Phase 4: rolling backtest engine, Kupiec, Christoffersen, Basel zones
-tests/                pytest test suite, mirrors the src/ structure (129 tests)
+  api/                Phase 5: FastAPI app — routers, Pydantic schemas, services, auth, logging
+tests/                pytest test suite, mirrors the src/ structure (179 tests)
 configs/              YAML configs (asset universe, date ranges) — no hardcoded params in code
 scripts/              thin orchestration entry points (run_ingestion.py, fit_volatility.py, run_var.py)
 data/cache/           gitignored — raw price pulls, regenerable via scripts/run_ingestion.py
