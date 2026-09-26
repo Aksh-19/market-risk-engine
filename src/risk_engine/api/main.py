@@ -1,11 +1,15 @@
 from contextlib import asynccontextmanager
 import pandas as pd
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Depends
 from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
 from risk_engine import __version__
 from risk_engine.api.config import Settings
 from risk_engine.api.errors import UnknownTickerError, NoBacktestError
 from risk_engine.api.routers import health, var
+from risk_engine.api.logging_config import configure_logging
+from risk_engine.api.middleware import RequestContextMiddleware
+from risk_engine.api.security import verify_api_key
 
 
 @asynccontextmanager
@@ -19,9 +23,20 @@ async def lifespan(app: FastAPI):
 
 
 def create_app() -> FastAPI:
+    configure_logging()
+    settings = Settings()
     app = FastAPI(title="market-risk-engine", version=__version__, lifespan=lifespan)
+
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.cors_origins,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+    app.add_middleware(RequestContextMiddleware)
+
     app.include_router(health.router)
-    app.include_router(var.router)
+    app.include_router(var.router, dependencies=[Depends(verify_api_key)])
 
     @app.exception_handler(UnknownTickerError)
     async def _unknown_ticker(_: Request, exc: UnknownTickerError):

@@ -91,5 +91,6 @@ def tmp_risk_db(tmp_path):
 def client(tmp_returns_parquet, tmp_risk_db, monkeypatch):
     monkeypatch.setenv("RISK_RETURNS_PATH", str(tmp_returns_parquet))
     monkeypatch.setenv("RISK_DB_PATH", str(tmp_risk_db))
-    with TestClient(create_app()) as c:
+    monkeypatch.setenv("RISK_API_KEY", "test-key")
+    with TestClient(create_app(), headers={"X-API-Key": "test-key"}) as c:
         yield c

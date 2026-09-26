@@ -1,6 +1,7 @@
 import numpy as np
 import pytest
 from risk_engine.var import historical_var
+from fastapi.testclient import TestClient
 
 
 def test_api_matches_engine(client):
@@ -73,3 +74,14 @@ def test_attribution_unknown_ticker(client):
         "/v1/var/attribution", json={"weights": {"NOPE": 1.0}, "confidence_level": 0.99}
     )
     assert r.status_code == 422
+
+
+def test_missing_api_key_rejected(tmp_returns_parquet, tmp_risk_db, monkeypatch):
+    monkeypatch.setenv("RISK_RETURNS_PATH", str(tmp_returns_parquet))
+    monkeypatch.setenv("RISK_DB_PATH", str(tmp_risk_db))
+    monkeypatch.setenv("RISK_API_KEY", "test-key")
+    from risk_engine.api.main import create_app
+
+    with TestClient(create_app()) as no_key_client:  # deliberately no header
+        r = no_key_client.post("/v1/var", json={"weights": {"SPY": 1.0}, "confidence_level": 0.99})
+    assert r.status_code == 401
