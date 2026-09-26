@@ -1,0 +1,894 @@
+{
+  "components": {
+    "schemas": {
+      "AssetContribution": {
+        "properties": {
+          "component_var": {
+            "title": "Component Var",
+            "type": "number"
+          },
+          "marginal_contribution": {
+            "title": "Marginal Contribution",
+            "type": "number"
+          },
+          "pct_of_var": {
+            "title": "Pct Of Var",
+            "type": "number"
+          },
+          "ticker": {
+            "title": "Ticker",
+            "type": "string"
+          },
+          "weight": {
+            "title": "Weight",
+            "type": "number"
+          }
+        },
+        "required": [
+          "ticker",
+          "weight",
+          "marginal_contribution",
+          "component_var",
+          "pct_of_var"
+        ],
+        "title": "AssetContribution",
+        "type": "object"
+      },
+      "AttributionRequest": {
+        "properties": {
+          "confidence_level": {
+            "default": 0.99,
+            "exclusiveMaximum": 1.0,
+            "exclusiveMinimum": 0.5,
+            "title": "Confidence Level",
+            "type": "number"
+          },
+          "cov_source": {
+            "default": "ewma",
+            "enum": [
+              "ewma",
+              "ledoit_wolf",
+              "garch_hybrid"
+            ],
+            "title": "Cov Source",
+            "type": "string"
+          },
+          "weights": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "title": "Weights",
+            "type": "object"
+          }
+        },
+        "required": [
+          "weights"
+        ],
+        "title": "AttributionRequest",
+        "type": "object"
+      },
+      "AttributionResponse": {
+        "properties": {
+          "confidence_level": {
+            "title": "Confidence Level",
+            "type": "number"
+          },
+          "contributions": {
+            "items": {
+              "$ref": "#/components/schemas/AssetContribution"
+            },
+            "title": "Contributions",
+            "type": "array"
+          },
+          "portfolio_var": {
+            "title": "Portfolio Var",
+            "type": "number"
+          },
+          "sum_check": {
+            "description": "Should equal portfolio_var within float tolerance",
+            "title": "Sum Check",
+            "type": "number"
+          }
+        },
+        "required": [
+          "confidence_level",
+          "portfolio_var",
+          "contributions",
+          "sum_check"
+        ],
+        "title": "AttributionResponse",
+        "type": "object"
+      },
+      "BacktestQuantileResult": {
+        "properties": {
+          "breach_rate": {
+            "title": "Breach Rate",
+            "type": "number"
+          },
+          "christoffersen_lr_ind": {
+            "title": "Christoffersen Lr Ind",
+            "type": "number"
+          },
+          "christoffersen_p_ind": {
+            "title": "Christoffersen P Ind",
+            "type": "number"
+          },
+          "christoffersen_reject_ind": {
+            "title": "Christoffersen Reject Ind",
+            "type": "boolean"
+          },
+          "combined_lr": {
+            "title": "Combined Lr",
+            "type": "number"
+          },
+          "combined_p_value": {
+            "title": "Combined P Value",
+            "type": "number"
+          },
+          "combined_reject": {
+            "title": "Combined Reject",
+            "type": "boolean"
+          },
+          "confidence_level": {
+            "title": "Confidence Level",
+            "type": "number"
+          },
+          "kupiec_lr": {
+            "title": "Kupiec Lr",
+            "type": "number"
+          },
+          "kupiec_p_value": {
+            "title": "Kupiec P Value",
+            "type": "number"
+          },
+          "kupiec_reject": {
+            "title": "Kupiec Reject",
+            "type": "boolean"
+          },
+          "n_breaches": {
+            "title": "N Breaches",
+            "type": "integer"
+          },
+          "n_obs": {
+            "title": "N Obs",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "confidence_level",
+          "n_obs",
+          "n_breaches",
+          "breach_rate",
+          "kupiec_lr",
+          "kupiec_p_value",
+          "kupiec_reject",
+          "christoffersen_lr_ind",
+          "christoffersen_p_ind",
+          "christoffersen_reject_ind",
+          "combined_lr",
+          "combined_p_value",
+          "combined_reject"
+        ],
+        "title": "BacktestQuantileResult",
+        "type": "object"
+      },
+      "BacktestResponse": {
+        "properties": {
+          "basel_summary": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BaselSummary"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "method": {
+            "enum": [
+              "historical",
+              "parametric",
+              "monte_carlo",
+              "filtered_historical"
+            ],
+            "title": "Method",
+            "type": "string"
+          },
+          "quantile_results": {
+            "items": {
+              "$ref": "#/components/schemas/BacktestQuantileResult"
+            },
+            "title": "Quantile Results",
+            "type": "array"
+          },
+          "run_date": {
+            "format": "date",
+            "title": "Run Date",
+            "type": "string"
+          }
+        },
+        "required": [
+          "method",
+          "run_date",
+          "quantile_results",
+          "basel_summary"
+        ],
+        "title": "BacktestResponse",
+        "type": "object"
+      },
+      "BaselSummary": {
+        "properties": {
+          "current_breaches": {
+            "title": "Current Breaches",
+            "type": "integer"
+          },
+          "current_zone_is_red": {
+            "title": "Current Zone Is Red",
+            "type": "boolean"
+          },
+          "n_windows": {
+            "title": "N Windows",
+            "type": "integer"
+          },
+          "pct_time_green": {
+            "title": "Pct Time Green",
+            "type": "number"
+          }
+        },
+        "required": [
+          "n_windows",
+          "current_breaches",
+          "pct_time_green",
+          "current_zone_is_red"
+        ],
+        "title": "BaselSummary",
+        "type": "object"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "title": "Detail",
+            "type": "array"
+          }
+        },
+        "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "Provenance": {
+        "properties": {
+          "compute_ms": {
+            "title": "Compute Ms",
+            "type": "number"
+          },
+          "cov_source": {
+            "enum": [
+              "ewma",
+              "ledoit_wolf",
+              "garch_hybrid"
+            ],
+            "title": "Cov Source",
+            "type": "string"
+          },
+          "data_as_of": {
+            "format": "date",
+            "title": "Data As Of",
+            "type": "string"
+          },
+          "engine_version": {
+            "title": "Engine Version",
+            "type": "string"
+          },
+          "n_observations": {
+            "title": "N Observations",
+            "type": "integer"
+          },
+          "seed": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seed"
+          }
+        },
+        "required": [
+          "data_as_of",
+          "n_observations",
+          "engine_version",
+          "cov_source",
+          "seed",
+          "compute_ms"
+        ],
+        "title": "Provenance",
+        "type": "object"
+      },
+      "VaRHistoryEntry": {
+        "properties": {
+          "confidence_level": {
+            "title": "Confidence Level",
+            "type": "number"
+          },
+          "cov_source": {
+            "anyOf": [
+              {
+                "enum": [
+                  "ewma",
+                  "ledoit_wolf",
+                  "garch_hybrid"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cov Source"
+          },
+          "es_value": {
+            "title": "Es Value",
+            "type": "number"
+          },
+          "method": {
+            "enum": [
+              "historical",
+              "parametric",
+              "monte_carlo",
+              "filtered_historical"
+            ],
+            "title": "Method",
+            "type": "string"
+          },
+          "portfolio": {
+            "title": "Portfolio",
+            "type": "string"
+          },
+          "run_date": {
+            "format": "date",
+            "title": "Run Date",
+            "type": "string"
+          },
+          "var_value": {
+            "title": "Var Value",
+            "type": "number"
+          }
+        },
+        "required": [
+          "run_date",
+          "portfolio",
+          "method",
+          "cov_source",
+          "confidence_level",
+          "var_value",
+          "es_value"
+        ],
+        "title": "VaRHistoryEntry",
+        "type": "object"
+      },
+      "VaRHistoryResponse": {
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/VaRHistoryEntry"
+            },
+            "title": "Results",
+            "type": "array"
+          }
+        },
+        "required": [
+          "count",
+          "results"
+        ],
+        "title": "VaRHistoryResponse",
+        "type": "object"
+      },
+      "VaRRequest": {
+        "properties": {
+          "confidence_level": {
+            "default": 0.99,
+            "exclusiveMaximum": 1.0,
+            "exclusiveMinimum": 0.5,
+            "title": "Confidence Level",
+            "type": "number"
+          },
+          "cov_source": {
+            "default": "ewma",
+            "enum": [
+              "ewma",
+              "ledoit_wolf",
+              "garch_hybrid"
+            ],
+            "title": "Cov Source",
+            "type": "string"
+          },
+          "methods": {
+            "items": {
+              "enum": [
+                "historical",
+                "parametric",
+                "monte_carlo",
+                "filtered_historical"
+              ],
+              "type": "string"
+            },
+            "title": "Methods",
+            "type": "array"
+          },
+          "seed": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seed"
+          },
+          "weights": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "title": "Weights",
+            "type": "object"
+          }
+        },
+        "required": [
+          "weights"
+        ],
+        "title": "VaRRequest",
+        "type": "object"
+      },
+      "VaRResponse": {
+        "properties": {
+          "confidence_level": {
+            "title": "Confidence Level",
+            "type": "number"
+          },
+          "horizon_days": {
+            "default": 1,
+            "title": "Horizon Days",
+            "type": "integer"
+          },
+          "provenance": {
+            "$ref": "#/components/schemas/Provenance"
+          },
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/VaRResult"
+            },
+            "title": "Results",
+            "type": "array"
+          }
+        },
+        "required": [
+          "confidence_level",
+          "results",
+          "provenance"
+        ],
+        "title": "VaRResponse",
+        "type": "object"
+      },
+      "VaRResult": {
+        "properties": {
+          "es": {
+            "title": "Es",
+            "type": "number"
+          },
+          "es_var_ratio": {
+            "title": "Es Var Ratio",
+            "type": "number"
+          },
+          "method": {
+            "enum": [
+              "historical",
+              "parametric",
+              "monte_carlo",
+              "filtered_historical"
+            ],
+            "title": "Method",
+            "type": "string"
+          },
+          "var": {
+            "description": "Positive decimal loss fraction, e.g. 0.0199",
+            "title": "Var",
+            "type": "number"
+          }
+        },
+        "required": [
+          "method",
+          "var",
+          "es",
+          "es_var_ratio"
+        ],
+        "title": "VaRResult",
+        "type": "object"
+      },
+      "ValidationError": {
+        "properties": {
+          "ctx": {
+            "title": "Context",
+            "type": "object"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Location",
+            "type": "array"
+          },
+          "msg": {
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "title": "Error Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError",
+        "type": "object"
+      }
+    },
+    "securitySchemes": {
+      "APIKeyHeader": {
+        "in": "header",
+        "name": "X-API-Key",
+        "type": "apiKey"
+      }
+    }
+  },
+  "info": {
+    "title": "market-risk-engine",
+    "version": "0.1.0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/health": {
+      "get": {
+        "operationId": "health_health_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Health",
+        "tags": [
+          "ops"
+        ]
+      }
+    },
+    "/ready": {
+      "get": {
+        "operationId": "ready_ready_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Ready",
+        "tags": [
+          "ops"
+        ]
+      }
+    },
+    "/v1/backtests/{method}": {
+      "get": {
+        "operationId": "backtests_v1_backtests__method__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "method",
+            "required": true,
+            "schema": {
+              "enum": [
+                "historical",
+                "parametric",
+                "monte_carlo",
+                "filtered_historical"
+              ],
+              "title": "Method",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BacktestResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "summary": "Backtests",
+        "tags": [
+          "var"
+        ]
+      }
+    },
+    "/v1/var": {
+      "post": {
+        "operationId": "post_var_v1_var_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VaRRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VaRResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "summary": "Post Var",
+        "tags": [
+          "var"
+        ]
+      }
+    },
+    "/v1/var/attribution": {
+      "post": {
+        "operationId": "post_attribution_v1_var_attribution_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AttributionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AttributionResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "summary": "Post Attribution",
+        "tags": [
+          "var"
+        ]
+      }
+    },
+    "/v1/var/history": {
+      "get": {
+        "operationId": "var_history_v1_var_history_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "portfolio",
+            "required": false,
+            "schema": {
+              "default": "equal_weight_4asset",
+              "title": "Portfolio",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "method",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "historical",
+                    "parametric",
+                    "monte_carlo",
+                    "filtered_historical"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Method"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cov_source",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "ewma",
+                    "ledoit_wolf",
+                    "garch_hybrid"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cov Source"
+            }
+          },
+          {
+            "in": "query",
+            "name": "confidence_level",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Confidence Level"
+            }
+          },
+          {
+            "in": "query",
+            "name": "start",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Start"
+            }
+          },
+          {
+            "in": "query",
+            "name": "end",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "End"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VaRHistoryResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "summary": "Var History",
+        "tags": [
+          "var"
+        ]
+      }
+    }
+  }
+}
