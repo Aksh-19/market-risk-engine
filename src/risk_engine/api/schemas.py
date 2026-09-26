@@ -90,3 +90,31 @@ class BacktestResponse(BaseModel):
     run_date: date
     quantile_results: list[BacktestQuantileResult]
     basel_summary: BaselSummary | None
+
+
+class AttributionRequest(BaseModel):
+    weights: dict[str, Weight]
+    confidence_level: float = Field(0.99, gt=0.5, lt=1.0)
+    cov_source: CovSource = "ewma"
+
+    @model_validator(mode="after")
+    def _weights_sum_to_one(self):
+        total = sum(self.weights.values())
+        if abs(total - 1.0) > 1e-6:
+            raise ValueError(f"weights must sum to 1 (got {total:.6f})")
+        return self
+
+
+class AssetContribution(BaseModel):
+    ticker: str
+    weight: float
+    marginal_contribution: float
+    component_var: float
+    pct_of_var: float
+
+
+class AttributionResponse(BaseModel):
+    confidence_level: float
+    portfolio_var: float
+    contributions: list[AssetContribution]
+    sum_check: float = Field(description="Should equal portfolio_var within float tolerance")

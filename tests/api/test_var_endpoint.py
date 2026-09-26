@@ -51,3 +51,25 @@ def test_history_empty_when_no_match(client):
     r = client.get("/v1/var/history", params={"method": "monte_carlo", "confidence_level": 0.99})
     assert r.status_code == 200
     assert r.json() == {"count": 0, "results": []}
+
+
+def test_attribution_sums_to_portfolio_var(client):
+    r = client.post(
+        "/v1/var/attribution",
+        json={
+            "weights": {"SPY": 0.25, "AAPL": 0.25, "TLT": 0.25, "GLD": 0.25},
+            "confidence_level": 0.99,
+            "cov_source": "ewma",
+        },
+    )
+    assert r.status_code == 200
+    body = r.json()
+    assert body["sum_check"] == pytest.approx(body["portfolio_var"], abs=1e-9)
+    assert sum(c["weight"] for c in body["contributions"]) == pytest.approx(1.0)
+
+
+def test_attribution_unknown_ticker(client):
+    r = client.post(
+        "/v1/var/attribution", json={"weights": {"NOPE": 1.0}, "confidence_level": 0.99}
+    )
+    assert r.status_code == 422
