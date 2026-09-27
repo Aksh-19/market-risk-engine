@@ -1,7 +1,11 @@
 import plotly.graph_objects as go
 import streamlit as st
+import sys
+from pathlib import Path
 
-from dashboard.data_access import (
+sys.path.insert(0, str(Path(__file__).parent))
+
+from data_access import (
     compute_all_methods,
     compute_attribution,
     load_backtest_results,
