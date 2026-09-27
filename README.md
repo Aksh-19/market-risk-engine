@@ -24,11 +24,11 @@ traffic-light), and serves the results through a real API and dashboard.
       Monte Carlo, Filtered Historical Simulation)
 - [x] Phase 4 — Backtesting (Kupiec, Christoffersen, Basel traffic-light)
 - [x] Phase 5 — FastAPI service layer
-- [ ] Phase 6 — Streamlit dashboard
-- [ ] Phase 7 — Docker + deployment + CI polish
+- [x] Phase 6 — Streamlit dashboard
+- [ ] Phase 7 — Docker + deployment + CI polish (deferred)
 
 > **Scope note:** given project timeline constraints, only the Phase 6
-> Streamlit dashboard will be deployed live. Phase 7 (Docker + full API
+> Streamlit dashboard is deployed live. Phase 7 (Docker + full API
 > deployment) is deferred rather than dropped, the API itself is
 > complete, tested, and runnable locally regardless.
 
@@ -214,6 +214,18 @@ sharing one connection across FastAPI's threadpool (fixed by opening a
 per-request connection via a generator dependency). Both are now guarded
 permanently by contract tests, not just fixed once by hand.
 
+**Phase 6 details:** `dashboard/` — a live Streamlit dashboard importing
+`risk_engine` directly (no deployed API dependency — see scope note above).
+Three views: live VaR/ES comparison across all 4 methods with interactive
+weight sliders, a static backtest validation panel (Kupiec/Christoffersen/
+Basel, matching Phase 4's findings exactly), and a live component VaR
+breakdown visualizing capital allocation vs. actual risk contribution per
+asset — the same Euler decomposition from Phase 5.4, reimplemented
+independently of the `api/` package so the dashboard has no FastAPI
+dependency.
+
+**Live demo:** https://market-risk-engine-y5tlztiomxpjrfbuiehhey.streamlit.app/
+
 +179 tests total across all modules (167 engine + 12 API/contract), all passing in CI.
 
 ## Local setup
@@ -238,6 +250,7 @@ python3 scripts/run_var.py         # Phase 3: compute VaR/ES across 4 methods, p
 python3 scripts/run_backtest.py             # Phase 4: rolling out-of-sample backtest (slow)
 python3 scripts/run_backtest_validation.py  # Phase 4: Kupiec/Christoffersen/Basel, persist results
 python3 -m uvicorn risk_engine.api.main:app --reload   # Phase 5: run the API locally, docs at /docs
+python -m streamlit run dashboard/app.py   # Phase 6: launch the dashboard locally
 ```
 
 ## Project structure
@@ -253,9 +266,13 @@ src/risk_engine/     the actual package — importable code lives here
   api/                Phase 5: FastAPI app — routers, Pydantic schemas, services, auth, logging
 tests/                pytest test suite, mirrors the src/ structure (179 tests)
 configs/              YAML configs (asset universe, date ranges) — no hardcoded params in code
-scripts/              thin orchestration entry points (run_ingestion.py, fit_volatility.py, run_var.py)
+scripts/              thin orchestration entry points (run_ingestion.py, fit_volatility.py, run_var.py, etc)
 data/cache/           gitignored — raw price pulls, regenerable via scripts/run_ingestion.py
-data/processed/       gitignored — pipeline outputs (returns_matrix.parquet, risk_engine.db, etc.)
+data/processed/       gitignored — pipeline outputs, EXCEPT returns_matrix.parquet and
+                       risk_engine.db, which are committed deliberately so the Phase 6
+                       dashboard has real data on a fresh deploy (Streamlit Cloud clones
+                       the repo fresh; gitignored files wouldn't exist there otherwise)
 .github/workflows/    CI: lint + test on every push
 pyproject.toml        dependencies + tool config (single source of truth)
+dashboard/            Phase 6: Streamlit app (app.py, data_access.py) — imports risk_engine directly
 ```
