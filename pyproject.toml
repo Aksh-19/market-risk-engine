@@ -21,8 +21,8 @@ dependencies = [
     "fastapi>=0.110",       # API framework (phase 5)
     "uvicorn[standard]>=0.29",  # ASGI server to run FastAPI
     "pydantic>=2.6",        # request/response schema validation
-    "streamlit>=1.32",      # dashboard (phase 6)
-    "plotly>=5.20",         # interactive charts in the dashboard
+    "streamlit==1.63.0",      # dashboard (phase 6)
+    "plotly==7.0.0",         # interactive charts in the dashboard
     "pydantic>=2.0",
     "pyyaml>=6.0",
     "pyarrow>=14.0",
